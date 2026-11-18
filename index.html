@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KaryaMahasiswa – Katalog Berputar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --night:#1b1a3a; --night2:#2a2858; --cream:#fff6e5; --orange:#ff7a3d;
+    --mint:#6ee7c8; --ink:#1b1a3a; --muted:#6b6a8a;
+  }
+  *{box-sizing:border-box;margin:0}
+  html,body{height:100%}
+  body{font-family:'DM Sans',sans-serif;color:var(--cream);background:
+    radial-gradient(900px 500px at 15% 10%,#3b3787 0%,transparent 60%),
+    radial-gradient(700px 500px at 90% 90%,#5a2e6e 0%,transparent 60%),
+    var(--night);
+    min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden}
+  h1,h2,h3{font-family:'Bricolage Grotesque',sans-serif}
+  button{font:inherit;cursor:pointer;border:0}
+  :focus-visible{outline:3px solid var(--mint);outline-offset:2px}
+
+  header{display:flex;justify-content:space-between;align-items:center;padding:18px clamp(16px,4vw,48px)}
+  .brand{display:flex;align-items:center;gap:10px;font-family:'Bricolage Grotesque';font-weight:800;font-size:1.35rem}
+  .brand i{font-style:normal;display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:var(--orange);color:var(--ink)}
+  .cart-btn{position:relative;background:var(--cream);color:var(--ink);font-weight:700;padding:10px 18px;border-radius:999px}
+  .cart-btn b{position:absolute;top:-6px;right:-6px;min-width:22px;height:22px;border-radius:99px;background:var(--orange);color:#fff;font-size:.75rem;display:grid;place-items:center}
+
+  .hero{text-align:center;padding:10px 20px 0}
+  .hero h2{font-size:clamp(2rem,6vw,4rem);font-weight:800;line-height:1.05;letter-spacing:-.02em}
+  .hero p{max-width:520px;margin:12px auto 0;color:#cfcdf0}
+
+  /* ---------- Karosel 3D ---------- */
+  .stage{flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:520px;perspective:1400px;perspective-origin:50% 40%;touch-action:pan-y;cursor:grab;user-select:none}
+  .stage.drag{cursor:grabbing}
+  .ring{position:relative;width:var(--w);height:var(--h);transform-style:preserve-3d;margin-top:30px}
+  .item{position:absolute;inset:0;transform-style:preserve-3d}
+  .card{width:100%;height:100%;background:var(--cream);color:var(--ink);border-radius:22px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 60px -20px rgba(0,0,0,.55);backface-visibility:hidden;transition:box-shadow .2s}
+  .card img{width:100%;height:46%;object-fit:cover;display:block;pointer-events:none}
+  .card .body{flex:1;padding:14px 16px 16px;display:flex;flex-direction:column}
+  .tag{align-self:flex-start;font-size:.72rem;font-weight:700;background:var(--night);color:var(--mint);padding:3px 10px;border-radius:99px}
+  .card h3{font-size:1.15rem;margin:8px 0 4px;line-height:1.15}
+  .card p{font-size:.78rem;color:var(--muted);line-height:1.4;flex:1;overflow:hidden}
+  .stok{font-size:.72rem;color:var(--muted)}
+  .row{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+  .price{font-family:'Bricolage Grotesque';font-weight:800;font-size:1.05rem;color:#d4521a}
+  .add{background:var(--orange);color:var(--ink);font-weight:700;font-size:.8rem;padding:9px 14px;border-radius:12px;transition:transform .15s}
+  .add:hover{transform:scale(1.06)}
+
+  .controls{display:flex;gap:12px;align-items:center;margin:28px 0 8px;z-index:2}
+  .ctl{width:46px;height:46px;border-radius:50%;background:rgba(255,246,229,.12);color:var(--cream);font-size:1.2rem;border:1px solid rgba(255,246,229,.3)}
+  .ctl:hover{background:var(--cream);color:var(--ink)}
+  .hint{font-size:.8rem;color:#b9b7e0;min-width:150px;text-align:center}
+
+  .state{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#cfcdf0;z-index:3}
+  footer{text-align:center;font-size:.75rem;color:#a9a7d6;padding:18px}
+  footer b{color:var(--mint)}
+
+  /* ---------- Keranjang ---------- */
+  #cart-modal{position:fixed;inset:0;background:rgba(10,9,30,.6);z-index:30;display:none;justify-content:flex-end}
+  #cart-modal.open{display:flex}
+  .drawer{background:var(--cream);color:var(--ink);width:100%;max-width:430px;height:100%;display:flex;flex-direction:column;padding:22px;animation:slide .25s ease-out}
+  @keyframes slide{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+  .drawer-head{display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid #e3d8c0}
+  .drawer-head button{background:none;font-size:1.8rem;color:var(--muted)}
+  #cart-items{flex:1;overflow-y:auto;padding:14px 0;display:flex;flex-direction:column;gap:10px}
+  .empty{color:var(--muted);text-align:center;padding:30px 0;font-size:.9rem}
+  .ci{display:flex;justify-content:space-between;align-items:center;background:#fff;border-radius:14px;padding:10px 12px;font-size:.88rem}
+  .ci small{color:var(--muted)}
+  .ci button{background:none;color:#c0392b;font-weight:700;font-size:.8rem}
+  .total{display:flex;justify-content:space-between;font-weight:800;font-size:1.1rem;padding:12px 0;border-top:1px solid #e3d8c0}
+  form label{display:block;font-size:.75rem;font-weight:700;margin:8px 0 4px}
+  form input,form textarea{width:100%;border:1.5px solid #d9ccb0;background:#fff;border-radius:10px;padding:9px 11px;font:inherit;font-size:.9rem}
+  form input:focus,form textarea:focus{outline:2px solid var(--orange);border-color:transparent}
+  #btn-submit{width:100%;margin-top:14px;background:var(--night);color:var(--cream);font-weight:700;padding:13px;border-radius:14px}
+  #btn-submit:hover{background:var(--night2)}
+  #btn-submit:disabled{opacity:.6}
+
+  @media (max-width:600px){ .stage{min-height:480px} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><i>K</i> KaryaMahasiswa</div>
+  <button class="cart-btn" onclick="toggleCart()" aria-label="Buka keranjang">🛒 Keranjang <b id="cart-count">0</b></button>
+</header>
+
+<section class="hero">
+  <h2>Karya muda, berputar<br>untuk kamu pilih.</h2>
+  <p>Seret atau geser karosel untuk melihat semua produk. Pesan langsung lewat WhatsApp.</p>
+</section>
+
+<main class="stage" id="stage" aria-label="Karosel produk">
+  <div class="state" id="state">Memuat katalog produk…</div>
+  <div class="ring" id="ring"></div>
+  <div class="controls">
+    <button class="ctl" id="prev" aria-label="Produk sebelumnya">‹</button>
+    <span class="hint" id="hint">Seret untuk memutar</span>
+    <button class="ctl" id="next" aria-label="Produk berikutnya">›</button>
+  </div>
+</main>
+
+<footer>
+  <p>© 2026 Toko Kreatif Mahasiswa. All rights reserved.</p>
+  <p>Powered by <b>wahyuramadhan.com</b></p>
+</footer>
+
+<!-- Keranjang -->
+<div id="cart-modal" onclick="if(event.target===this)toggleCart()">
+  <div class="drawer">
+    <div class="drawer-head"><h3>Keranjang Belanja</h3><button onclick="toggleCart()" aria-label="Tutup">&times;</button></div>
+    <div id="cart-items"></div>
+    <div class="total"><span>Total Pembayaran</span><span id="cart-total">Rp 0</span></div>
+    <form id="checkout-form" onsubmit="handleCheckout(event)">
+      <label for="cust-name">Nama lengkap</label>
+      <input id="cust-name" required placeholder="Contoh: Budi Santoso">
+      <label for="cust-phone">Nomor WhatsApp</label>
+      <input id="cust-phone" type="tel" required placeholder="Contoh: 081234567890">
+      <label for="cust-address">Alamat pengiriman</label>
+      <textarea id="cust-address" rows="2" required placeholder="Jalan, nomor rumah, kelurahan, kecamatan, kota"></textarea>
+      <button type="submit" id="btn-submit">Pesan via WhatsApp 📲</button>
+    </form>
+  </div>
+</div>
+
+<script>
+/* ====== PENGATURAN ====== */
+const API_URL  = "https://script.google.com/macros/s/AKfycbxqawMUw-3FqIfk0iQvgZ3_YtKq9PmdlarcrvM5mpGV_bKJLUy1uZMTB4oAeWAbnqxM/exec"; // URL /exec Apps Script
+const WA_ADMIN = "6287815503585";                          // Format 628xxxxxxxxxx
+const KECEPATAN = 0.12;                                    // derajat per frame (auto-putar)
+
+/* Produk contoh, dipakai jika API_URL belum diisi / gagal dimuat */
+const DEMO = [
+  {id:1,nama:"Tote Bag Batik",kategori:"Fashion",deskripsi:"Totebag kanvas dengan motif batik cap tangan.",harga:65000,stok:20},
+  {id:2,nama:"Kopi Susu Aren",kategori:"Minuman",deskripsi:"Kopi susu gula aren botol 250 ml, tanpa pengawet.",harga:18000,stok:50},
+  {id:3,nama:"Stiker Pack Kampus",kategori:"Desain",deskripsi:"10 stiker vinyl tahan air, ilustrasi kampus.",harga:25000,stok:40},
+  {id:4,nama:"Lilin Aromaterapi",kategori:"Rumah",deskripsi:"Lilin soy wax aroma lavender, nyala 25 jam.",harga:45000,stok:15},
+  {id:5,nama:"Keripik Pisang Madu",kategori:"Makanan",deskripsi:"Renyah, manis alami, kemasan 200 gram.",harga:22000,stok:35},
+  {id:6,nama:"Gelang Macrame",kategori:"Aksesoris",deskripsi:"Gelang tali rajut buatan tangan, ukuran bebas.",harga:30000,stok:25}
+];
+const EMOJI = {Fashion:"👜",Minuman:"☕",Desain:"🎨",Rumah:"🕯️",Makanan:"🍌",Aksesoris:"📿"};
+const WARNA = ["#ff7a3d","#6ee7c8","#ffd166","#c7a6ff","#8ecae6","#ff9eb5"];
+
+let products = [], cart = [];
+
+/* ====== DATA ====== */
+async function loadProducts(){
+  const state = document.getElementById("state");
+  try{
+    if(API_URL.startsWith("MASUKKAN")) throw new Error("demo");
+    const res = await fetch(API_URL);
+    const json = await res.json();
+    products = json.data;
+  }catch(e){
+    products = DEMO;
+  }
+  state.style.display = "none";
+  buildRing();
+}
+
+function esc(s){return String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function rp(n){return "Rp " + Number(n||0).toLocaleString("id-ID")}
+
+function placeholder(p,i){
+  const c = WARNA[i % WARNA.length], e = EMOJI[p.kategori] || "🛍️";
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300'><rect width='400' height='300' fill='${c}'/><circle cx='330' cy='40' r='90' fill='rgba(255,255,255,.25)'/><text x='50%' y='58%' font-size='110' text-anchor='middle'>${e}</text></svg>`;
+  return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+}
+
+/* ====== KAROSEL 3D ====== */
+const stage = document.getElementById("stage");
+const ring  = document.getElementById("ring");
+let items = [], angle = 0, step = 0, radius = 0;
+let paused = false, dragging = false, startX = 0, startAngle = 0, velocity = 0, snapTo = null;
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function buildRing(){
+  const w = innerWidth < 600 ? 230 : 260, h = innerWidth < 600 ? 340 : 370;
+  ring.style.setProperty("--w", w+"px");
+  ring.style.setProperty("--h", h+"px");
+  const n = products.length;
+  step = 360 / n;
+  radius = Math.max(260, Math.round((w/2) / Math.tan(Math.PI/n)) + 40);
+  ring.innerHTML = "";
+  items = products.map((p,i)=>{
+    const el = document.createElement("div");
+    el.className = "item";
+    el.style.transform = `rotateY(${i*step}deg) translateZ(${radius}px)`;
+    el.innerHTML = `
+      <div class="card">
+        <img src="${esc(p.foto) || placeholder(p,i)}" alt="${esc(p.nama)}" draggable="false">
+        <div class="body">
+          <span class="tag">${esc(p.kategori || "Umum")}</span>
+          <h3>${esc(p.nama)}</h3>
+          <p>${esc(p.deskripsi)}</p>
+          <span class="stok">Sisa stok: <b>${esc(p.stok || 0)}</b></span>
+          <div class="row"><span class="price">${rp(p.harga)}</span>
+          <button class="add" data-id="${esc(p.id)}">+ Keranjang</button></div>
+        </div>
+      </div>`;
+    el.querySelector("img").onerror = e => { e.target.onerror=null; e.target.src = placeholder(p,i); };
+    ring.appendChild(el);
+    return el;
+  });
+  ring.querySelectorAll(".add").forEach(b=>{
+    b.addEventListener("pointerdown",e=>e.stopPropagation());
+    b.addEventListener("click",()=>addToCart(b.dataset.id));
+  });
+}
+
+function frame(){
+  if(snapTo !== null){
+    const d = snapTo - angle; angle += d * 0.12;
+    if(Math.abs(d) < 0.05){ angle = snapTo; snapTo = null; }
+  } else if(dragging){
+    /* diatur oleh pointermove */
+  } else if(Math.abs(velocity) > 0.02){
+    angle += velocity; velocity *= 0.94;
+  } else if(!paused && !reduce){
+    angle -= KECEPATAN;
+  }
+  ring.style.transform = `translateZ(${-radius}px) rotateY(${angle}deg)`;
+  /* kartu di belakang dibuat lebih redup */
+  items.forEach((el,i)=>{
+    const a = ((i*step + angle) % 360 + 360) % 360;
+    const depth = (1 + Math.cos(a*Math.PI/180)) / 2;      // 1 = depan
+    el.style.opacity = (0.25 + 0.75*depth).toFixed(2);
+    el.style.pointerEvents = depth > 0.6 ? "auto" : "none";
+  });
+  requestAnimationFrame(frame);
+}
+
+stage.addEventListener("pointerdown",e=>{
+  dragging = true; velocity = 0; snapTo = null;
+  startX = e.clientX; startAngle = angle; stage.classList.add("drag");
+  stage.setPointerCapture(e.pointerId);
+});
+stage.addEventListener("pointermove",e=>{
+  if(!dragging) return;
+  const next = startAngle + (e.clientX - startX) * 0.35;
+  velocity = (next - angle) * 0.6; angle = next;
+});
+const endDrag = ()=>{ dragging = false; stage.classList.remove("drag"); };
+stage.addEventListener("pointerup",endDrag);
+stage.addEventListener("pointercancel",endDrag);
+stage.addEventListener("mouseenter",()=>paused = true);
+stage.addEventListener("mouseleave",()=>paused = false);
+
+function nudge(dir){
+  const base = snapTo !== null ? snapTo : angle;
+  snapTo = Math.round(base/step)*step + dir*step;
+}
+document.getElementById("prev").onclick = ()=>nudge(1);
+document.getElementById("next").onclick = ()=>nudge(-1);
+addEventListener("keydown",e=>{
+  if(e.key==="ArrowLeft") nudge(1);
+  if(e.key==="ArrowRight") nudge(-1);
+  if(e.key==="Escape") document.getElementById("cart-modal").classList.remove("open");
+});
+let rz; addEventListener("resize",()=>{clearTimeout(rz); rz=setTimeout(()=>products.length&&buildRing(),200)});
+
+/* ====== KERANJANG ====== */
+function addToCart(id){
+  const p = products.find(x=>String(x.id)===String(id));
+  if(!p) return;
+  const ex = cart.find(i=>String(i.id)===String(id));
+  ex ? ex.qty++ : cart.push({...p,qty:1});
+  updateCartUI();
+  const h = document.getElementById("hint");
+  h.textContent = "✓ " + p.nama + " ditambahkan";
+  setTimeout(()=>h.textContent="Seret untuk memutar",1800);
+}
+function removeItem(i){ cart.splice(i,1); updateCartUI(); }
+
+function updateCartUI(){
+  document.getElementById("cart-count").textContent = cart.reduce((a,i)=>a+i.qty,0);
+  const box = document.getElementById("cart-items");
+  let total = 0;
+  box.innerHTML = cart.length ? "" : `<p class="empty">Keranjang masih kosong. Putar karosel dan pilih produk.</p>`;
+  cart.forEach((it,idx)=>{
+    total += it.harga*it.qty;
+    box.insertAdjacentHTML("beforeend",
+      `<div class="ci"><div><b>${esc(it.nama)}</b><br><small>${rp(it.harga)} × ${it.qty}</small></div>
+       <button onclick="removeItem(${idx})">Hapus</button></div>`);
+  });
+  document.getElementById("cart-total").textContent = rp(total);
+}
+function toggleCart(){ document.getElementById("cart-modal").classList.toggle("open"); }
+
+async function handleCheckout(e){
+  e.preventDefault();
+  if(!cart.length) return alert("Keranjang masih kosong.");
+  const btn = document.getElementById("btn-submit");
+  btn.textContent = "Mencatat pesanan…"; btn.disabled = true;
+
+  const inv = "INV-" + Date.now().toString().slice(-6);
+  const payload = {
+    nama: document.getElementById("cust-name").value,
+    whatsapp: document.getElementById("cust-phone").value,
+    alamat: document.getElementById("cust-address").value,
+    items: cart,
+    total: cart.reduce((a,i)=>a+i.harga*i.qty,0)
+  };
+  try{
+    if(!API_URL.startsWith("MASUKKAN")){
+      fetch(API_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify(payload)});
+    }
+    let t = `Halo Admin, saya ingin konfirmasi pesanan:\n\n`;
+    t += `🧾 *Invoice: ${inv}*\n👤 *Nama:* ${payload.nama}\n📱 *No. WA:* ${payload.whatsapp}\n📍 *Alamat:* ${payload.alamat}\n\n🛍️ *Daftar Belanja:*\n`;
+    payload.items.forEach(i=>{ t += `• ${i.nama} (${i.qty}x) = ${rp(i.harga*i.qty)}\n`; });
+    t += `\n💰 *Total Pembayaran: ${rp(payload.total)}*\n\nMohon info nomor rekening dan total ongkirnya. Terima kasih!`;
+    window.open(`https://wa.me/${WA_ADMIN}?text=${encodeURIComponent(t)}`,"_blank");
+    cart = []; updateCartUI(); toggleCart(); e.target.reset();
+  }catch(err){
+    alert("Gagal memproses pesanan. Silakan coba lagi.");
+  }finally{
+    btn.textContent = "Pesan via WhatsApp 📲"; btn.disabled = false;
+  }
+}
+
+updateCartUI();
+loadProducts();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
